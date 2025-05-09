@@ -13,9 +13,6 @@
                     <field name="planning_lot_id" readonly="1" invisible="not planning_lot_id"/>
                 </field>
 
-                <xpath expr="//field[@name='lot_producing_id']" position="attributes">
-                    <attribute name="readonly">state != 'confirmed'</attribute>
-                </xpath>
                 <button name="button_unbuild" position="after">
                     <field name="is_bom_component_available" invisible="1"/>
                     <button name="action_add_product" type="object" string="Take From Raw Material"

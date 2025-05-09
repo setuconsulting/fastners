@@ -265,3 +265,13 @@ class ProductionPlanning(models.Model):
 
     def button_stop(self):
         self.planning_lines.button_stop()
+
+    @api.onchange('production_kg')
+    def onchange_production_kg(self):
+        for rec in self:
+            bom_id = rec.find_bill_of_material(rec.product_id.put_in_pack_product_id or rec.product_id)
+            bom_ids = rec.find_all_mo_type_bom(bom_id)
+            for bom_id in bom_ids:
+                qty = bom_ids.get(bom_id)
+                line = rec.planning_lines.filtered(lambda line: line.bom_id.id == bom_id.id)
+                line.qty = qty

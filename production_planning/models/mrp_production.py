@@ -373,3 +373,14 @@ class MrpProduction(models.Model):
             }
         )
         return return_wiz.return_product()
+
+    def update_qty_to_product(self, quantity=0, increase=False):
+        remaining_qty = self.product_qty - quantity if not increase else self.product_qty + quantity
+        if remaining_qty > 0:
+            update_quantity_wizard = self.env['change.production.qty'].create({
+                'mo_id': self.id,
+                'product_qty': remaining_qty,
+            })
+            update_quantity_wizard.change_prod_qty()
+        else:
+            self.action_cancel()

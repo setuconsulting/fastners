@@ -26,6 +26,7 @@ class RegisterSubcontract(models.Model):
             if hasattr(purchase_id, 'is_outsourcing'):
                 purchase_id.is_outsourcing = True
             self.planning_line.write({'subcontract_bom_id': self.bom_id})
+            self.planning_line.running_production_id.update_qty_to_product(self.subcontract_qty)
             return {
                 'type': 'ir.actions.act_window',
                 'view_mode': 'form',

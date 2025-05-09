@@ -6,7 +6,7 @@ class PurchaseOrder(models.Model):
 
     planning_id = fields.Many2one(comodel_name='mrp.production.planning',
                                   string='Planning')
-    planning_lines_id = fields.Many2one('mrp.production.planning.line')
+    planning_line_id = fields.Many2one('mrp.production.planning.line')
     is_outsourcing = fields.Boolean(string="Is Outsourcing?", copy=False)
     is_subcontract = fields.Boolean(string="Is Outsourcing?", copy=False)
 
@@ -33,10 +33,22 @@ class PurchaseOrder(models.Model):
         """
         vals = {
             'partner_id': vendor_id.id,
-            'order_line': [Command.create({'product_id': product_id.id,
+            'order_line': [Command.create({'name': product_id.name,
+                                           'product_id': product_id.id,
                                            'product_uom': product_uom_id.id,
                                            'product_qty': product_qty})],
             'planning_id': (planning_id and planning_id.id) or planning_id,
-            'planning_lines_id': planning_line_id and planning_line_id.id
+            'planning_line_id': planning_line_id and planning_line_id.id
         }
         return self.create(vals)
+
+    def button_cancel(self):
+        res = super(PurchaseOrder, self).button_cancel()
+        for order in self.filtered(lambda order: order.planning_line_id):
+            mo_ids = order.planning_line_id.running_production_id.procurement_group_id.mrp_production_ids
+            qty = order.order_line[:1].product_qty
+            pending_qty = order.planning_line_id.qty - (sum(mo_ids.mapped('product_qty')) + qty)
+            if pending_qty < 0:
+                qty = qty + pending_qty
+            order.planning_line_id.running_production_id.update_qty_to_product(qty, increase=True)
+        return res

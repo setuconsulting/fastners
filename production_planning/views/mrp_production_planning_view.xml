@@ -57,8 +57,8 @@
                             </group>
                             <group readonly="state != 'draft'">
                                 <field name="available_qty" readonly="1"/>
-                                <field name="qty" required="1"/>
-                                <field name="production_kg" required="1"/>
+                                <field name="qty" required="1" readonly="state not in ['draft','confirm']"/>
+                                <field name="production_kg" required="1" readonly="state not in ['draft','confirm']"/>
                                 <label for="lot_name" invisible="lot_id"/>
                                 <div class="o_row" invisible="lot_id">
                                     <field name="lot_name"/>

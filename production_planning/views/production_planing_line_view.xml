@@ -49,17 +49,33 @@
                                     </div>
                                     <div>
                                         <field name="running_production_id"/>
+                                        <field name="subcontract_ids" invisible="1"/>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between mt-3" style="min-height: 70px;">
+                                <div class="d-flex justify-content-between mt-3" style="min-height: 60px;"
+                                     invisible="not running_production_id">
+
+                                    <button type="object" name="action_add_product" string="Add Component"
+                                            class="btn btn-primary btn-sm w-100 me-2 mt-3" style="height: 50px;"
+                                            invisible="not running_production_id"/>
+                                    <button type="object" name="action_register_production" string="Register Production"
+                                            class="btn btn-success btn-sm w-100 me-2 mt-3" style="height: 50px;"
+                                            invisible="not running_production_id or not pending_qty"/>
+                                </div>
+                                <div class="d-flex justify-content-between mt-3" style="min-height: 60px;"
+                                     invisible="not subcontract_bom_id">
                                     <field name="subcontract_ids" invisible="1"/>
                                     <field name="subcontract_bom_id" invisible="1"/>
-                                    <button type="object" name="action_add_product" string="Add Component"
-                                            class="btn btn-primary btn-sm w-100 me-2 mt-3" style="height: 50px;"/>
-                                    <button type="object" name="action_register_production" string="Register Production"
-                                            class="btn btn-success btn-sm w-100 me-2 mt-3" style="height: 50px;"/>
-                                    <button type="object" name="action_register_subcontract" string="Job Work"
-                                            class="btn btn-warning btn-sm w-100 mt-3" invisible="not subcontract_bom_id" style="height: 50px;"/>
+                                    <button type="object" name="action_register_subcontract" string="Create Job Work"
+                                            class="btn btn-warning btn-sm w-100 mt-3 me-2"
+                                            invisible="not subcontract_bom_id or subcontract_ids"
+                                            style="height: 50px;"/>
+                                    <button type="object" name="action_view_subcontracting_resupply" string="Resupply"
+                                            class="btn btn-primary btn-sm w-100 mt-3 me-2"
+                                            invisible="not subcontract_ids" style="height: 50px;"/>
+                                    <button type="object" name="action_receive_subcontract" string="Receive Product"
+                                            class="btn btn-success btn-sm w-100 mt-3 me-2"
+                                            invisible="not subcontract_ids" style="height: 50px;"/>
                                 </div>
                             </div>
                         </t>
@@ -79,5 +95,17 @@
         <menuitem id="menu_register_production_root" name="Register Production"
                   web_icon="production_planning,static/description/register_production.png" groups="mrp.group_mrp_manager"
                   action="mrp_production_planning_line_action" sequence="138"/>
+
+        <!--  Menu Action : Mrp Production Planning  -->
+        <record id="mrp_production_planning_line_done_action" model="ir.actions.act_window">
+            <field name="name">Planning Details</field>
+            <field name="res_model">mrp.production.planning.line</field>
+            <field name="view_mode">kanban,tree</field>
+        </record>
+        <!--  Root Menu : Planning  -->
+        <menuitem id="menu_done_production_root" name="Planning Details"
+                  parent="menu_manufacturing_process_root" groups="mrp.group_mrp_manager"
+                  action="mrp_production_planning_line_done_action" sequence="2"/>
+
     </data>
 </odoo>

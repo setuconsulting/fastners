@@ -42,7 +42,7 @@ class MrpProductionPlanning(models.Model):
         ('available', 'Available'),
         ('unavailable', 'Not Available'),
         ('partially_available', 'Partially Available')], compute='_compute_component_status')
-    subcontract_ids = fields.One2many('purchase.order', 'planning_lines_id', string='Subcontract')
+    subcontract_ids = fields.One2many('purchase.order', 'planning_line_id', string='Subcontract')
     subcontract_bom_id = fields.Many2one('mrp.bom')
 
     @api.depends('planning_id.mo_ids', 'subcontract_ids')
@@ -50,7 +50,7 @@ class MrpProductionPlanning(models.Model):
         for rec in self:
             product_mos = rec.find_product_mos()
             rec.mo_count = len(product_mos)
-            rec.done_qty = sum(product_mos.mapped('qty_produced')) + sum(rec.subcontract_ids.filtered(lambda sub: sub.state != 'cancel').order_line.mapped('product_qty'))
+            rec.done_qty = sum(product_mos.mapped('qty_produced')) + sum(rec.subcontract_ids.filtered(lambda sub: sub.state != 'cancel').order_line.mapped('qty_received'))
             rec.pending_qty = rec.qty - min(rec.done_qty, rec.qty)
             rec.reserved_qty = product_mos.get_available_component_qty_for_return()
             if not rec.pending_qty:
@@ -131,3 +131,9 @@ class MrpProductionPlanning(models.Model):
                 rec.component_status = 'partially_available'
             else:
                 rec.component_status = 'unavailable'
+
+    def action_receive_subcontract(self):
+        return self.subcontract_ids.action_view_picking()
+
+    def action_view_subcontracting_resupply(self):
+        return  self.subcontract_ids.action_view_subcontracting_resupply()
