@@ -2,7 +2,6 @@
     'name': "Setu Product Packages",
     'summary': "",
     'category': 'Inventory',
-
     'author': 'Setu Consulting Services Pvt. Ltd.',
     'maintainer': 'Setu Consulting Services Pvt. Ltd.',
     'website': 'https://www.setuconsulting.com/',

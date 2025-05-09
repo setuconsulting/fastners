@@ -3,7 +3,6 @@
 from . import mrp_production_planning
 from . import mrp_production
 from . import mrp_production_planning_line
-from . import mrp_workorder
 from . import planning_lot
 from . import res_partner
 from . import register_daily_production
@@ -14,3 +13,5 @@ from . import stock_location
 from . import stock_move
 from . import stock_picking
 from . import stock_scrap
+from . import purchase_order
+from . import stock_lot

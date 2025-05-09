@@ -43,6 +43,7 @@ class ProductionPlanning(models.Model):
     lot_name = fields.Char(string='Serial Number / Lot', copy=False)
     excel_file_data = fields.Binary()
     sale_order_ids = fields.Many2many("sale.order", "planing_id", "sale_id", string="Sale Orders")
+    subcontract_ids = fields.One2many('purchase.order', 'planning_id', string='Subcontracts')
 
     def action_confirm(self):
         """
@@ -55,7 +56,7 @@ class ProductionPlanning(models.Model):
         bom_id = self.find_bill_of_material(self.product_id.put_in_pack_product_id or self.product_id)
         if not bom_id:
             raise UserError(
-                "No Bill of Material found for product {}".format(self.product_id.put_in_pack_product_id.name))
+                "No Bill of Material found for product {}".format(self.product_id.put_in_pack_product_id.name or self.product_id.name))
         line_product_ids = []
         bom_ids = self.find_all_mo_type_bom(bom_id)
         for bom_id in bom_ids:
@@ -69,8 +70,9 @@ class ProductionPlanning(models.Model):
             else:
                 available_qty = self.get_available_qty_on_location(product_id)
             if product_id and product_id not in line_product_ids:
+                subcontract_bom_id = self.find_bill_of_material(product_id, type='subcontract')
                 lst.append((0, 0, {'product_id': product_id.id, 'bom_id': bom_id.id,
-                                   'available_qty': available_qty, 'qty': qty}))
+                                   'available_qty': available_qty, 'qty': qty, 'subcontract_bom_id': subcontract_bom_id.id}))
                 line_product_ids.append(bom_id.product_id.id)
         if lst:
             self.write({'planning_lines': lst, 'state': 'confirm'})
@@ -94,15 +96,18 @@ class ProductionPlanning(models.Model):
         bom_ids = {}
         previous_qty = 0
         for line in bom_id.bom_line_ids:
-            first_bom_id = self.find_bill_of_material(product_id=line.product_id)
+            first_bom_id = self.find_bill_of_material(product_id=line.product_id, type='normal') or self.find_bill_of_material(product_id=line.product_id)
+            if not first_bom_id:
+                bom_ids.update({bom_id: bom_id.product_qty * self.qty})
+                return bom_ids
             if first_bom_id:
-                bom_ids.update({bom_id: (line.product_qty / line.bom_id.product_qty) * self.qty})
-                previous_qty = line.product_qty * self.qty
+                bom_ids.update({bom_id: (line.product_qty / line.bom_id.product_qty) * self.production_kg})
+                previous_qty = line.product_qty * self.production_kg
 
         child_lines = bom_id.bom_line_ids
         while (child_lines):
             for line in child_lines:
-                bill_of_material_ids = self.find_bill_of_material(product_id=line.product_id)
+                bill_of_material_ids = self.find_bill_of_material(product_id=line.product_id, type='normal') or self.find_bill_of_material(product_id=line.product_id)
                 for bom_id in bill_of_material_ids:
                     bom_ids.update({bom_id: (line.product_qty / line.bom_id.product_qty) * previous_qty})
                     previous_qty *= (line.product_qty / line.bom_id.product_qty)
@@ -119,7 +124,8 @@ class ProductionPlanning(models.Model):
         lines = self.planning_lines.filtered(lambda line: line.qty > 0 and not line.product_id.id == self.product_id.id)
         if not lines and self.product_id.put_in_pack_product_id:
             raise UserError("Please Add Quantity into lines!")
-        for line in self.planning_lines.filtered(lambda line: line.qty > 0):
+        self.state = 'in_progress'
+        for line in self.planning_lines.filtered(lambda line: line.qty > 0 and line.bom_id.type != 'subcontract'):
             vals = {'product_id': line.product_id.id,
                     'planning_id': self.id,
                     'product_tmpl_id': line.product_id.product_tmpl_id.id,
@@ -136,7 +142,6 @@ class ProductionPlanning(models.Model):
                 _logger.info(
                     "MO {}: {} created for planing{}:{} with Qty: {}".format(mo_id.id, mo_id.name, self.id, self.name,
                                                                              line.qty))
-                self.state = 'in_progress'
                 line.write(
                     {'running_production_id': mo_id.id, 'workcenter_id': mo_id.workorder_ids[:1].workcenter_id.id})
             except Exception as e:
@@ -234,3 +239,29 @@ class ProductionPlanning(models.Model):
         for rec in self:
             lines = self.sale_order_ids.order_line.filtered(lambda line:line.product_id.id == self.product_id.id)
             rec.qty = sum(lines.mapped('product_uom_qty')) - sum(lines.mapped('qty_delivered'))
+
+    def action_view_subcontracts(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Subcontracts',
+            'view_mode': 'tree,form',
+            'res_model': 'purchase.order',
+            'domain': [('planning_id', '=', self.id)],
+            'context': {'create': False}
+        }
+
+    def action_view_mos(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Manufacturing Orders',
+            'view_mode': 'tree,form',
+            'res_model': 'mrp.production',
+            'domain': [('id', 'in', self.mo_ids.ids)],
+            'context': {'create': False}
+        }
+
+    def button_start(self):
+        self.planning_lines.button_start()
+
+    def button_stop(self):
+        self.planning_lines.button_stop()

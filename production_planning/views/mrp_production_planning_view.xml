@@ -20,9 +20,27 @@
                         <button name="cancel_planning" id="cancel_planning" string="Cancel"
                                 type="object"
                                 invisible="state in ['cancel','done']" class="oe_highlight"/>
+                        <button name="button_start" type="object" string="Start" class="btn btn-success"
+                                                invisible="state != 'in_progress'"/>
+                        <button name="button_stop" type="object" string="Stop" class="btn btn-warning"
+                                                invisible="state != 'in_progress'"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,confirm,forging,threading"/>
                     </header>
                     <sheet>
+                        <field name="subcontract_ids" invisible="1"/>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" name="action_view_subcontracts" type="object" icon="fa-truck" invisible="not subcontract_ids">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Job Work</span>
+                                </div>
+                            </button>
+                            <field name="mo_ids" invisible="1"/>
+                            <button class="oe_stat_button" name="action_view_mos" type="object" icon="fa-industry" invisible="not mo_ids">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_text">Manufacturing</span>
+                                </div>
+                            </button>
+                        </div>
                         <div class="oe_title">
                             <h1>
                                 <field name="priority" widget="priority" class="mr-3"/>
@@ -62,24 +80,20 @@
                                         <field name="product_id" options="{'no_open': True}" readonly="1"
                                                column_invisible="1"/>
                                         <field name="bom_id" required="1"/>
-                                        <field name="component_status" optional="show"
-                                               decoration-success="running_production_id.reservation_state == 'assigned' or component_status == 'available'"
-                                               decoration-warning="running_production_id.reservation_state != 'assigned' and component_status in ('expected', 'available')"
-                                               decoration-danger="running_production_id.reservation_state != 'assigned' and component_status in ('late', 'unavailable')"/>
+                                        <field name="component_status" optional="show" widget="badge" invisible="state in ['draft', 'confirm', 'cancel']"
+                                               decoration-success="component_status == 'available'"
+                                               decoration-warning="component_status == 'partially_available'"
+                                               decoration-danger="component_status == 'unavailable'"/>
                                         <field name="available_qty" readonly="1"/>
                                         <field name="qty" string="Manufacture Qty in KG"/>
                                         <field name="in_progress" column_invisible="1"/>
                                         <field name="state" column_invisible="1"/>
                                         <field name="company_id" column_invisible="1"/>
                                         <field name="pending_qty" readonly="1" string="Pending Qty"/>
-                                        <button name="button_start" type="object" string="Start" class="bg-success"
+                                        <button name="button_start" type="object" string="Start" class="btn btn-success"
                                                 invisible="parent.state != 'in_progress' or in_progress or not pending_qty"/>
-                                        <button name="button_stop" type="object" string="Stop" class="bg-warning"
+                                        <button name="button_stop" type="object" string="Stop" class="btn btn-warning"
                                                 invisible="parent.state != 'in_progress' or not in_progress or not pending_qty"/>
-                                        <field name="mo_count" column_invisible="1"/>
-                                        <button class="oe_stat_button" name="open_manufacturing_orders" type="object"
-                                                invisible="not mo_count" attrs="{'invisible': [('mo_count', '=', 0)]}"
-                                                string="Mo's"/>
                                     </tree>
                                 </field>
                             </page>
